@@ -386,9 +386,18 @@ struct TextRegion {
         const char* text_end_,
         bool bIndentToHere_ = false);
 
-    void RenderListTextWrapped(const char* text_, const char* text_end_)
+    void RenderUnorderedListTextWrapped(const char* text_, const char* text_end_)
     {
         ImGui::Bullet();
+        ImGui::SameLine();
+        RenderTextWrapped(text_, text_end_, true);
+    }
+
+    void RenderOrderedListTextWrapped(uint16_t order, const char* text_, const char* text_end_)
+    {
+        char order_buf[16];
+        snprintf(order_buf, sizeof(order_buf), "%d.", order);
+        ImGui::Text(order_buf);
         ImGui::SameLine();
         RenderTextWrapped(text_, text_end_, true);
     }
@@ -506,13 +515,13 @@ RenderLine(const char* markdown_,
         formatInfo.type = MarkdownFormatType::UNORDERED_LIST;
         mdConfig_.formatCallback(formatInfo, true);
         const char* text = markdown_ + textStart + 1;
-        textRegion_.RenderListTextWrapped(text, text + textSize - 1);
+        textRegion_.RenderUnorderedListTextWrapped(text, text + textSize - 1);
     } else if (line_.orderedListLevel > 0) // render unordered list
     {
         formatInfo.type = MarkdownFormatType::ORDERED_LIST;
         mdConfig_.formatCallback(formatInfo, true);
         const char* text = markdown_ + textStart + 1;
-        textRegion_.RenderListTextWrapped(text, text + textSize - 1);
+        textRegion_.RenderOrderedListTextWrapped(line_.orderedListLevel, text, text + textSize - 1);
     } else if (line_.isHeading) // render heading
     {
         formatInfo.level = line_.headingCount;
