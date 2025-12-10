@@ -290,6 +290,7 @@ struct MarkdownFormatInfo {
     const MarkdownConfig* config = NULL;
     const char* text = NULL;
     int32_t textLength = 0;
+    bool firstLine = false; // true if markdown precedes this text block
 };
 
 typedef void
@@ -478,7 +479,7 @@ inline void
 RenderLine(const char* markdown_,
     Line& line_,
     TextRegion& textRegion_,
-    const MarkdownConfig& mdConfig_)
+    const MarkdownConfig& mdConfig_, bool firstLine_)
 {
     // indent
     int indentStart = 0;
@@ -495,6 +496,7 @@ RenderLine(const char* markdown_,
     // render
     MarkdownFormatInfo formatInfo;
     formatInfo.config = &mdConfig_;
+    formatInfo.firstLine = firstLine_;
     int textStart = line_.lastRenderPosition + 1;
     int textSize = line_.lineEnd - textStart;
     if (line_.isUnorderedListStart) // render unordered list
@@ -553,6 +555,8 @@ Markdown(const char* markdown_,
     Link link;
     Emphasis em;
     TextRegion textRegion;
+
+    bool firstLine = true;
 
     char c = 0;
     for (int i = 0; i < (int)markdownLength_; ++i) {
@@ -646,7 +650,7 @@ Markdown(const char* markdown_,
                 em = Emphasis();
                 // render previous line content
                 line.lineEnd = link.text.start - (link.isImage ? 2 : 1);
-                RenderLine(markdown_, line, textRegion, mdConfig_);
+                RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                 line.leadSpaceCount = 0;
                 link.url.stop = i;
                 line.isUnorderedListStart = false; // the following text shouldn't have bullets
@@ -778,7 +782,7 @@ Markdown(const char* markdown_,
                     int lineEnd = em.text.start - line.emphasisCount;
                     if (lineEnd > line.lineStart) {
                         line.lineEnd = lineEnd;
-                        RenderLine(markdown_, line, textRegion, mdConfig_);
+                        RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                         ImGui::SameLine(0.0f, 0.0f);
                         line.isUnorderedListStart = false;
                         line.leadSpaceCount = 0;
@@ -787,7 +791,7 @@ Markdown(const char* markdown_,
                     line.lastRenderPosition = em.text.start - 1;
                     line.lineStart = em.text.start;
                     line.lineEnd = em.text.stop;
-                    RenderLine(markdown_, line, textRegion, mdConfig_);
+                    RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                     ImGui::SameLine(0.0f, 0.0f);
                     line.isEmphasis = false;
                     line.lastRenderPosition = i;
@@ -819,7 +823,7 @@ Markdown(const char* markdown_,
             } else {
                 // render the line: multiline emphasis requires a complex implementation
                 // so not supporting
-                RenderLine(markdown_, line, textRegion, mdConfig_);
+                RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
             }
 
             // reset the line and emphasis state
@@ -833,6 +837,8 @@ Markdown(const char* markdown_,
 
             // reset the link
             link = Link();
+
+            firstLine = false;
         }
     }
 
@@ -846,7 +852,7 @@ Markdown(const char* markdown_,
             if (0 == markdown_[line.lineEnd - 1]) {
                 --line.lineEnd;
             }
-            RenderLine(markdown_, line, textRegion, mdConfig_);
+            RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
         }
     }
 
@@ -1116,17 +1122,17 @@ defaultMarkdownFormatCallback(const MarkdownFormatInfo& markdownFormatInfo_,
                 ImGui::PushFont(fmt.font);
 #endif
             }
-            ImGui::NewLine();
+            if (!markdownFormatInfo_.firstLine) {
+                ImGui::NewLine();
+            }
         } else {
             if (fmt.separator) {
                 ImGui::Separator();
-                ImGui::NewLine();
-            } else {
-                ImGui::NewLine();
             }
             if (fmt.font) {
                 ImGui::PopFont();
             }
+            ImGui::NewLine();
         }
         break;
     }
