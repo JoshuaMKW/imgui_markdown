@@ -1132,7 +1132,7 @@ defaultMarkdownFormatCallback(const MarkdownFormatInfo& markdownFormatInfo_,
             if (fmt.font) {
                 ImGui::PopFont();
             }
-            ImGui::NewLine();
+            //ImGui::NewLine();
         }
         break;
     }
