@@ -399,17 +399,17 @@ struct TextRegion {
         char order_buf[16];
         snprintf(order_buf, sizeof(order_buf), "%d.", order);
 
-        ImGuiWindow* window = GetCurrentWindow();
+        ImGui::ImGuiWindow* window = GetCurrentWindow();
         if (window->SkipItems)
             return;
 
-        ImGuiContext& g = *GImGui;
-        const ImGuiStyle& style = g.Style;
+        ImGui::ImGuiContext& g = *ImGui::GetCurrentContext();
+        const ImGui::ImGuiStyle& style = g.Style;
         const float line_height = ImMax(ImMin(window->DC.CurrLineSize.y, g.FontSize + style.FramePadding.y * 2), g.FontSize);
-        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(g.FontSize, line_height));
-        ItemSize(bb);
-        if (!ItemAdd(bb, 0)) {
-            SameLine(0, style.FramePadding.x * 2);
+        const ImGui::ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImGui::ImVec2(g.FontSize, line_height));
+        ImGui::ItemSize(bb);
+        if (!ImGui::ItemAdd(bb, 0)) {
+            ImGui::SameLine(0, style.FramePadding.x * 2);
             return;
         }
 
