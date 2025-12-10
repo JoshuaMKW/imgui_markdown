@@ -398,6 +398,21 @@ struct TextRegion {
     {
         char order_buf[16];
         snprintf(order_buf, sizeof(order_buf), "%d.", order);
+
+        ImGuiWindow* window = GetCurrentWindow();
+        if (window->SkipItems)
+            return;
+
+        ImGuiContext& g = *GImGui;
+        const ImGuiStyle& style = g.Style;
+        const float line_height = ImMax(ImMin(window->DC.CurrLineSize.y, g.FontSize + style.FramePadding.y * 2), g.FontSize);
+        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(g.FontSize, line_height));
+        ItemSize(bb);
+        if (!ItemAdd(bb, 0)) {
+            SameLine(0, style.FramePadding.x * 2);
+            return;
+        }
+
         ImGui::Text(order_buf);
         ImGui::SameLine();
         RenderTextWrapped(text_, text_end_, true);
