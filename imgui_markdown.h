@@ -485,7 +485,7 @@ RenderLine(const char* markdown_,
 {
     // indent
     int indentStart = 0;
-    if (line_.isUnorderedListStart || line_.orderedListLevel > 0) // ImGui unordered list render always adds
+    if (line_.unorderedListChar != '\0' || line_.orderedListLevel > 0) // ImGui unordered list render always adds
                                                                   // one indent
     {
         indentStart = 1;
@@ -501,7 +501,7 @@ RenderLine(const char* markdown_,
     formatInfo.firstLine = firstLine_;
     int textStart = line_.lastRenderPosition + 1;
     int textSize = line_.lineEnd - textStart;
-    if (line_.isUnorderedListStart) // render unordered list
+    if (line_.unorderedListChar != '\0') // render unordered list
     {
         formatInfo.type = MarkdownFormatType::UNORDERED_LIST;
         mdConfig_.formatCallback(formatInfo, true);
