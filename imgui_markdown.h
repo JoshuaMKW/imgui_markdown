@@ -278,6 +278,7 @@ enum class MarkdownFormatType {
     NORMAL_TEXT,
     HEADING,
     UNORDERED_LIST,
+    ORDERED_LIST,
     LINK,
     EMPHASIS,
 };
@@ -424,7 +425,8 @@ private:
 struct Line {
     bool isHeading = false;
     bool isEmphasis = false;
-    bool isUnorderedListStart = false;
+    uint8_t unorderedListChar = '\0';
+    int16_t orderedListLevel = 0;
     bool isLeadingSpace = true; // spaces at start of line
     int leadSpaceCount = 0;
     int headingCount = 0;
@@ -483,8 +485,8 @@ RenderLine(const char* markdown_,
 {
     // indent
     int indentStart = 0;
-    if (line_.isUnorderedListStart) // ImGui unordered list render always adds
-                                    // one indent
+    if (line_.isUnorderedListStart || line_.orderedListLevel > 0) // ImGui unordered list render always adds
+                                                                  // one indent
     {
         indentStart = 1;
     }
@@ -502,6 +504,12 @@ RenderLine(const char* markdown_,
     if (line_.isUnorderedListStart) // render unordered list
     {
         formatInfo.type = MarkdownFormatType::UNORDERED_LIST;
+        mdConfig_.formatCallback(formatInfo, true);
+        const char* text = markdown_ + textStart + 1;
+        textRegion_.RenderListTextWrapped(text, text + textSize - 1);
+    } else if (line_.orderedListLevel > 0) // render unordered list
+    {
+        formatInfo.type = MarkdownFormatType::ORDERED_LIST;
         mdConfig_.formatCallback(formatInfo, true);
         const char* text = markdown_ + textStart + 1;
         textRegion_.RenderListTextWrapped(text, text + textSize - 1);
@@ -552,6 +560,7 @@ Markdown(const char* markdown_,
 
     ImGuiStyle& style = ImGui::GetStyle();
     Line line;
+    Line prevLine;
     Link link;
     Emphasis em;
     TextRegion textRegion;
@@ -573,14 +582,27 @@ Markdown(const char* markdown_,
             } else {
                 line.isLeadingSpace = false;
                 line.lastRenderPosition = i - 1;
-                if ((c == '*') && (line.leadSpaceCount >= 2)) {
-                    if (((int)markdownLength_ > i + 1) && (markdown_[i + 1] == ' ')) // space after '*'
-                    {
-                        line.isUnorderedListStart = true;
-                        ++i;
-                        ++line.lastRenderPosition;
+                const bool marksUnorderedListing
+                    = (c == '*' || c == '-') && ((int)markdownLength_ > i + 1) && (markdown_[i + 1] == ' ') && line.leadSpaceCount < 4;
+                const bool marksOrderedListing = (c >= '0' && c <= '9') && line.leadSpaceCount < 4 && [&]() {
+                    uint32_t j = i + 1;
+                    while (j < markdownLength_ && markdown_[j] >= '0' && markdown_[j] <= '9') {
+                        ++j;
                     }
-                    // carry on processing as could be emphasis
+                    return (j < markdownLength_ && markdown_[j] == '.' && (j + 1 < markdownLength_) && markdown_[j + 1] == ' ');
+                }();
+                if (marksUnorderedListing) {
+                    line.unorderedListChar = c;
+                    ++i;
+                    ++line.lastRenderPosition;
+                } else if (marksOrderedListing) {
+                    line.orderedListLevel = prevLine.orderedListLevel + 1;
+                    uint32_t j = i + 1;
+                    while (j < markdownLength_ && markdown_[j] >= '0' && markdown_[j] <= '9') {
+                        ++j;
+                    }
+                    i = (int)j + 1; // skip past '.' and space
+                    line.lastRenderPosition = i - 1;
                 } else if (c == '#') {
                     line.headingCount++;
                     bool bContinueChecking = true;
@@ -653,7 +675,8 @@ Markdown(const char* markdown_,
                 RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                 line.leadSpaceCount = 0;
                 link.url.stop = i;
-                line.isUnorderedListStart = false; // the following text shouldn't have bullets
+                line.unorderedListChar = '\0'; // the following text shouldn't have bullets
+                line.orderedListLevel = 0; // the following text shouldn't have numbers
                 ImGui::SameLine(0.0f, 0.0f);
                 if (link.isImage) // it's an image, render it.
                 {
@@ -784,7 +807,8 @@ Markdown(const char* markdown_,
                         line.lineEnd = lineEnd;
                         RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                         ImGui::SameLine(0.0f, 0.0f);
-                        line.isUnorderedListStart = false;
+                        line.unorderedListChar = '\0';
+                        line.orderedListLevel = 0;
                         line.leadSpaceCount = 0;
                     }
                     line.isEmphasis = true;
@@ -827,6 +851,7 @@ Markdown(const char* markdown_,
             }
 
             // reset the line and emphasis state
+            prevLine = line;
             line = Line();
             em = Emphasis();
 
@@ -1132,11 +1157,13 @@ defaultMarkdownFormatCallback(const MarkdownFormatInfo& markdownFormatInfo_,
             if (fmt.font) {
                 ImGui::PopFont();
             }
-            //ImGui::NewLine();
+            // ImGui::NewLine();
         }
         break;
     }
     case MarkdownFormatType::UNORDERED_LIST:
+        break;
+    case MarkdownFormatType::ORDERED_LIST:
         break;
     case MarkdownFormatType::LINK:
         if (start_) {
