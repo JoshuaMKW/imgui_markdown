@@ -372,7 +372,7 @@ inline void
 RenderLine(const char* markdown_,
     Line& line_,
     TextRegion& textRegion_,
-    const MarkdownConfig& mdConfig_);
+    const MarkdownConfig& mdConfig_, bool firstLine);
 
 struct TextRegion {
     TextRegion()
