@@ -806,7 +806,7 @@ Markdown(const char* markdown_,
                     line.lineEnd = line.lineStart;
                     line.lineStart = start;
                     line.lastRenderPosition = start - 1;
-                    RenderLine(markdown_, line, textRegion, mdConfig_);
+                    RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                     line.lineStart = line.lineEnd;
                     line.lastRenderPosition = line.lineStart - 1;
                 }
