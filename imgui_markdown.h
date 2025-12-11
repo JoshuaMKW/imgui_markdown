@@ -536,7 +536,7 @@ namespace ImGui
                 {
                     line.isLeadingSpace = false;
                     line.lastRenderPosition = i - 1;
-                    bool marksUnorderedListing = ( c == '*' || c == '-' ) && ( (int)markdownLength_ > i + 1 ) && ( markdown_[i + 1] == ' ' ) && ( line.leadSpaceCount < 4 );
+                    bool marksUnorderedListing = (c == '*' || c == '-' || c == '+' ) && ((int)markdownLength_ > i + 1) && (markdown_[i + 1] == ' ') && (line.leadSpaceCount < 4);
                     if( marksUnorderedListing )
                     {
                         if( ( (int)markdownLength_ > i + 1 ) && ( markdown_[ i + 1 ] == ' ' ) )    // space after '*'
