@@ -388,7 +388,7 @@ namespace ImGui
     struct Line {
         bool isHeading = false;
         bool isEmphasis = false;
-        bool isUnorderedListStart = false;
+        char unorderedListChar = '\0';
         bool isLeadingSpace = true;     // spaces at start of line
         int  leadSpaceCount = 0;
         int  headingCount = 0;
@@ -445,7 +445,7 @@ namespace ImGui
     {
         // indent
         int indentStart = 0;
-        if( line_.isUnorderedListStart )    // ImGui unordered list render always adds one indent
+        if ( line_.unorderedListChar != '\0' ) // ImGui unordered list render always adds one indent
         {
             indentStart = 1;
         }
@@ -459,7 +459,7 @@ namespace ImGui
         formatInfo.config = &mdConfig_;
         int textStart = line_.lastRenderPosition + 1;
         int textSize = line_.lineEnd - textStart;
-        if( line_.isUnorderedListStart )    // render unordered list
+        if ( line_.unorderedListChar != '\0' ) // render unordered list
         {
             formatInfo.type = MarkdownFormatType::UNORDERED_LIST;
             mdConfig_.formatCallback( formatInfo, true );
@@ -536,11 +536,12 @@ namespace ImGui
                 {
                     line.isLeadingSpace = false;
                     line.lastRenderPosition = i - 1;
-                    if(( c == '*' ) && ( line.leadSpaceCount >= 2 ))
+                    bool marksUnorderedListing = ( c == '*' || c == '-' ) && ( (int)markdownLength_ > i + 1 ) && ( markdown_[i + 1] == ' ' ) && ( line.leadSpaceCount < 4 );
+                    if( marksUnorderedListing )
                     {
                         if( ( (int)markdownLength_ > i + 1 ) && ( markdown_[ i + 1 ] == ' ' ) )    // space after '*'
                         {
-                            line.isUnorderedListStart = true;
+                            line.unorderedListChar = c;
                             ++i;
                             ++line.lastRenderPosition;
                         }
@@ -628,7 +629,7 @@ namespace ImGui
                     RenderLine( markdown_, line, textRegion, mdConfig_ );
                     line.leadSpaceCount = 0;
                     link.url.stop = i;
-                    line.isUnorderedListStart = false;    // the following text shouldn't have bullets
+                    line.unorderedListChar = '\0'; // the following text shouldn't have bullets
                     ImGui::SameLine( 0.0f, 0.0f );
                     if( link.isImage )   // it's an image, render it.
                     {
@@ -746,7 +747,7 @@ namespace ImGui
                             line.lineEnd = lineEnd;
                             RenderLine( markdown_, line, textRegion, mdConfig_ );
 						    ImGui::SameLine( 0.0f, 0.0f );
-                            line.isUnorderedListStart = false;
+                            line.unorderedListChar = '\0';
                             line.leadSpaceCount = 0;
                         }
 						line.isEmphasis = true;
