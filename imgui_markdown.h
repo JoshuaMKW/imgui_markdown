@@ -577,22 +577,18 @@ namespace ImGui
                 else if ((c == '\n'))
                 {
                     // Discard CRLF newlines by markdown spec
-                    concurrentEmptyNewlines++;
+                    concurrentEmptyNewLines++;
                     lineIndentStackCount = 0; // reset indents on multiple new lines
                     line.lineStart += 1;
                     continue;
-                } 
-                else if ((c == '\r') && ((int)markdownLength_ > i + 1) && (markdown_[i + 1] == '\n'))
-                {
+                } else if ((c == '\r') && ((int)markdownLength_ > i + 1) && (markdown_[i + 1] == '\n')) {
                     // Discard CRLF newlines by markdown spec
-                    concurrentEmptyNewlines++;
+                    concurrentEmptyNewLines++;
                     lineIndentStackCount = 0; // reset indents on multiple new lines
                     line.lineStart += 2;
                     i += 1;
                     continue;
-                }
-                else
-                {
+                } else {
                     line.isLeadingSpace = false;
                     line.lastRenderPosition = i - 1;
                     bool is_deeply_nested = false;
@@ -600,24 +596,20 @@ namespace ImGui
                         line, lineIndentStack, lineIndentStackCount, is_deeply_nested);
                     // Plain-text is tabbed to the deepest indention on the stack
                     line.indentCount = lineIndentStackCount > 0 ? lineIndentStack[lineIndentStackCount - 1].indentCount + 1 : 0;
-                    if (!is_deeply_nested)
-                    {
+                    if (!is_deeply_nested) {
                         bool marksUnorderedListing = (c == '*' || c == '-' || c == '+') && ((int)markdownLength_ > i + 1) && (markdown_[i + 1] == ' ');
                         if (!targetIndentLine) // Sub-lists have special handling from root lists
                         {
                             marksUnorderedListing &= line.leadSpaceCount < 4; // Root lists require less than 4 leading spaces
                         }
-                        if (marksUnorderedListing)
-                        {
+                        if (marksUnorderedListing) {
                             line.unorderedListChar = c;
                             ++i;
                             ++line.lastRenderPosition;
                             line.indentCount = targetIndentLine ? targetIndentLine->indentCount + 1
                                                                 : 0;
                             nextIndentStackCount = line.indentCount + 1;
-                        } 
-                        else if (c == '#')
-                        {
+                        } else if (c == '#') {
                             line.headingCount++;
                             bool bContinueChecking = true;
                             int j = i;
@@ -653,100 +645,84 @@ namespace ImGui
             }
 
             // Test to see if we have a link
-            switch( link.state )
-            {
+            switch (link.state) {
             case Link::NO_LINK:
-                if( c == '[' && !line.isHeading ) // we do not support headings with links for now
+                if (c == '[' && !line.isHeading) // we do not support headings with links for now
                 {
                     link.state = Link::HAS_SQUARE_BRACKET_OPEN;
                     link.text.start = i + 1;
-                    if( i > 0 && markdown_[i - 1] == '!' )
-                    {
+                    if (i > 0 && markdown_[i - 1] == '!') {
                         link.isImage = true;
                     }
                 }
                 break;
             case Link::HAS_SQUARE_BRACKET_OPEN:
-                if( c == ']' )
-                {
+                if (c == ']') {
                     link.state = Link::HAS_SQUARE_BRACKETS;
                     link.text.stop = i;
                 }
                 break;
             case Link::HAS_SQUARE_BRACKETS:
-                if( c == '(' )
-                {
+                if (c == '(') {
                     link.state = Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN;
                     link.url.start = i + 1;
                     link.num_brackets_open = 1;
                 }
                 break;
             case Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN:
-                if( c == '(' )
-                {
+                if (c == '(') {
                     ++link.num_brackets_open;
-                }
-                else if( c == ')' )
-                {
+                } else if (c == ')') {
                     --link.num_brackets_open;
                 }
-                if( link.num_brackets_open == 0 )
-                {
+                if (link.num_brackets_open == 0) {
                     // reset emphasis status, we do not support emphasis around links for now
                     em = Emphasis();
                     // render previous line content
-                    line.lineEnd = link.text.start - ( link.isImage ? 2 : 1 );
-                    RenderLine( markdown_, line, textRegion, mdConfig_, firstLine );
+                    line.lineEnd = link.text.start - (link.isImage ? 2 : 1);
+                    RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                     line.leadSpaceCount = 0;
                     link.url.stop = i;
                     line.unorderedListChar = '\0'; // the following text shouldn't have bullets
-                    ImGui::SameLine( 0.0f, 0.0f );
-                    if( link.isImage )   // it's an image, render it.
+                    ImGui::SameLine(0.0f, 0.0f);
+                    if (link.isImage) // it's an image, render it.
                     {
                         bool drawnImage = false;
                         bool useLinkCallback = false;
-                        if( mdConfig_.imageCallback )
-                        {
-                            MarkdownImageData imageData = mdConfig_.imageCallback( { markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true } );
+                        if (mdConfig_.imageCallback) {
+                            MarkdownImageData imageData = mdConfig_.imageCallback({ markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true });
                             useLinkCallback = imageData.useLinkCallback;
-                            if( imageData.isValid )
-                            {
+                            if (imageData.isValid) {
 #if IMGUI_VERSION_NUM < 19185
-                                if( imageData.bg_col.w > 0.0f )
-                                {
+                                if (imageData.bg_col.w > 0.0f) {
                                     ImVec2 p = ImGui::GetCursorScreenPos();
-                                    ImGui::GetWindowDrawList()->AddRectFilled( p, ImVec2( p.x + imageData.size.x, p.y + imageData.size.y ), ImGui::GetColorU32( imageData.bg_col ));
+                                    ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x + imageData.size.x, p.y + imageData.size.y), ImGui::GetColorU32(imageData.bg_col));
                                 }
-                                ImGui::Image( imageData.user_texture_id, imageData.size, imageData.uv0, imageData.uv1, imageData.tint_col, imageData.border_col );
+                                ImGui::Image(imageData.user_texture_id, imageData.size, imageData.uv0, imageData.uv1, imageData.tint_col, imageData.border_col);
 #else
-                                ImGui::PushStyleColor( ImGuiCol_Border, imageData.border_col );
-                                ImGui::ImageWithBg( imageData.user_texture_id, imageData.size, imageData.uv0, imageData.uv1, imageData.bg_col, imageData.tint_col );
+                                ImGui::PushStyleColor(ImGuiCol_Border, imageData.border_col);
+                                ImGui::ImageWithBg(imageData.user_texture_id, imageData.size, imageData.uv0, imageData.uv1, imageData.bg_col, imageData.tint_col);
                                 ImGui::PopStyleColor();
 #endif
                                 drawnImage = true;
                             }
                         }
-                        if( !drawnImage )
-                        {
-                            ImGui::Text( "( Image %.*s not loaded )", link.url.size(), markdown_ + link.url.start );
+                        if (!drawnImage) {
+                            ImGui::Text("( Image %.*s not loaded )", link.url.size(), markdown_ + link.url.start);
                         }
-                        if( ImGui::IsItemHovered() )
-                        {
-                            if( ImGui::IsMouseReleased( 0 ) && mdConfig_.linkCallback && useLinkCallback )
-                            {
-                                mdConfig_.linkCallback( { markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true } );
+                        if (ImGui::IsItemHovered()) {
+                            if (ImGui::IsMouseReleased(0) && mdConfig_.linkCallback && useLinkCallback) {
+                                mdConfig_.linkCallback({ markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true });
                             }
-                            if( link.text.size() > 0 && mdConfig_.tooltipCallback )
-                            {
-                                mdConfig_.tooltipCallback( { { markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true }, mdConfig_.linkIcon } );
+                            if (link.text.size() > 0 && mdConfig_.tooltipCallback) {
+                                mdConfig_.tooltipCallback({ { markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true }, mdConfig_.linkIcon });
                             }
                         }
-                    }
-                    else                 // it's a link, render it.
+                    } else // it's a link, render it.
                     {
-                        textRegion.RenderLinkTextWrapped( markdown_ + link.text.start, markdown_ + link.text.start + link.text.size(), link, markdown_, mdConfig_, &linkHoverStart, false );
+                        textRegion.RenderLinkTextWrapped(markdown_ + link.text.start, markdown_ + link.text.start + link.text.size(), link, markdown_, mdConfig_, &linkHoverStart, false);
                     }
-                    ImGui::SameLine( 0.0f, 0.0f );
+                    ImGui::SameLine(0.0f, 0.0f);
                     // reset the link by reinitializing it
                     link = Link();
                     line.lastRenderPosition = i;
@@ -755,136 +731,113 @@ namespace ImGui
             }
 
             // Test to see if we have emphasis styling
-			switch( em.state )
-			{
-			case Emphasis::NONE:
-				if( link.state == Link::NO_LINK && !line.isHeading )
-                {
+            switch (em.state) {
+            case Emphasis::NONE:
+                if (link.state == Link::NO_LINK && !line.isHeading) {
                     int next = i + 1;
                     int prev = i - 1;
-					if( ( c == '*' || c == '_' )
-                        && ( i == line.lineStart
-                            || markdown_[ prev ] == ' '
-                            || markdown_[ prev ] == '\t' ) // empasis must be preceded by whitespace or line start
+                    if ((c == '*' || c == '_')
+                        && (i == line.lineStart
+                            || markdown_[prev] == ' '
+                            || markdown_[prev] == '\t') // empasis must be preceded by whitespace or line start
                         && (int)markdownLength_ > next // emphasis must precede non-whitespace
-                        && markdown_[ next ] != ' '
-                        && markdown_[ next ] != '\n'
-                        && markdown_[ next ] != '\t' )
-                    {
-						em.state = Emphasis::LEFT;
-						em.sym = c;
+                        && markdown_[next] != ' '
+                        && markdown_[next] != '\n'
+                        && markdown_[next] != '\t') {
+                        em.state = Emphasis::LEFT;
+                        em.sym = c;
                         em.text.start = i;
-						line.emphasisCount = 1;
-						continue;
-					}
-				}
-				break;
-			case Emphasis::LEFT:
-				if( em.sym == c )
-                {
-					++line.emphasisCount;
-					continue;
-				}
-                else
-                {
-					em.text.start = i;
-					em.state = Emphasis::MIDDLE;
-				}
-				break;
-			case Emphasis::MIDDLE:
-				if( em.sym == c )
-                {
-					em.state = Emphasis::RIGHT;
-					em.text.stop = i;
-                   // pass through to case Emphasis::RIGHT
-				}
-                else
-                {
+                        line.emphasisCount = 1;
+                        continue;
+                    }
+                }
+                break;
+            case Emphasis::LEFT:
+                if (em.sym == c) {
+                    ++line.emphasisCount;
+                    continue;
+                } else {
+                    em.text.start = i;
+                    em.state = Emphasis::MIDDLE;
+                }
+                break;
+            case Emphasis::MIDDLE:
+                if (em.sym == c) {
+                    em.state = Emphasis::RIGHT;
+                    em.text.stop = i;
+                    // pass through to case Emphasis::RIGHT
+                } else {
                     break;
                 }
-            #if __cplusplus >= 201703L
-                  [[fallthrough]];
-            #endif
-			case Emphasis::RIGHT:
-				if( em.sym == c )
-                {
-					if( line.emphasisCount < 3 && ( i - em.text.stop + 1 == line.emphasisCount ) )
-                    {
+#if __cplusplus >= 201703L
+                [[fallthrough]];
+#endif
+            case Emphasis::RIGHT:
+                if (em.sym == c) {
+                    if (line.emphasisCount < 3 && (i - em.text.stop + 1 == line.emphasisCount)) {
                         // render text up to emphasis
                         int lineEnd = em.text.start - line.emphasisCount;
-                        if( lineEnd > line.lineStart )
-                        {
+                        if (lineEnd > line.lineStart) {
                             line.lineEnd = lineEnd;
-                            RenderLine( markdown_, line, textRegion, mdConfig_, firstLine );
-						    ImGui::SameLine( 0.0f, 0.0f );
+                            RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
+                            ImGui::SameLine(0.0f, 0.0f);
                             line.unorderedListChar = '\0';
                             line.leadSpaceCount = 0;
                         }
-						line.isEmphasis = true;
-						line.lastRenderPosition = em.text.start - 1;
+                        line.isEmphasis = true;
+                        line.lastRenderPosition = em.text.start - 1;
                         line.lineStart = em.text.start;
-					    line.lineEnd = em.text.stop;
-					    RenderLine( markdown_, line, textRegion, mdConfig_, firstLine );
-					    ImGui::SameLine( 0.0f, 0.0f );
-					    line.isEmphasis = false;
-					    line.lastRenderPosition = i;
-					    em = Emphasis();
+                        line.lineEnd = em.text.stop;
+                        RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
+                        ImGui::SameLine(0.0f, 0.0f);
+                        line.isEmphasis = false;
+                        line.lastRenderPosition = i;
+                        em = Emphasis();
                     }
                     continue;
-				}
-                else
-                {
+                } else {
                     em.state = Emphasis::NONE;
                     // render text up to here
                     int start = em.text.start - line.emphasisCount;
-                    if( start < line.lineStart )
-                    {
+                    if (start < line.lineStart) {
                         line.lineEnd = line.lineStart;
                         line.lineStart = start;
                         line.lastRenderPosition = start - 1;
-                        RenderLine( markdown_, line, textRegion, mdConfig_, firstLine );
-                        line.lineStart          = line.lineEnd;
+                        RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
+                        line.lineStart = line.lineEnd;
                         line.lastRenderPosition = line.lineStart - 1;
                     }
                 }
-				break;
-			}
+                break;
+            }
 
             // handle end of line (render)
-            if( c == '\n' )
-            {
+            if (c == '\n') {
                 // first check if the line is a horizontal rule
                 line.lineEnd = i;
-                if( em.state == Emphasis::MIDDLE && line.emphasisCount >=3 &&
-                    ( line.lineStart + line.emphasisCount ) == i )
-                {
+                if (em.state == Emphasis::MIDDLE && line.emphasisCount >= 3 && (line.lineStart + line.emphasisCount) == i) {
                     ImGui::Separator();
-                }
-                else
-                {
+                } else {
                     // In markdown spec, 2 or more consecutive newlines gets converted to a single blank line
                     // The first newline is always digested so we check for 1 or more here
-                    if (concurrentEmptyNewlines >= 1) {
+                    if (concurrentEmptyNewLines >= 1) {
                         ImGui::NewLine();
                     }
                     // render the line: multiline emphasis requires a complex implementation so not supporting
-                    RenderLine( markdown_, line, textRegion, mdConfig_, firstLine );
+                    RenderLine(markdown_, line, textRegion, mdConfig_, firstLine);
                 }
 
-                if ( 0 < nextIndentStackCount && nextIndentStackCount < INDENT_STACK_SIZE )
-                {
+                if (0 < nextIndentStackCount && nextIndentStackCount < INDENT_STACK_SIZE) {
                     // push the list line onto the stack
                     lineIndentStack[nextIndentStackCount - 1] = line;
                     lineIndentStackCount = nextIndentStackCount;
-                }
-                else if ( nextIndentStackCount == 0 )
-                {
+                } else if (nextIndentStackCount == 0) {
                     lineIndentStackCount = nextIndentStackCount;
                 }
 
                 // reset the line and emphasis state
                 prevLine = line;
-				line = Line();
+                line = Line();
                 em = Emphasis();
 
                 line.lineStart = i + 1;
@@ -897,7 +850,7 @@ namespace ImGui
                 link = Link();
 
                 firstLine = false;
-                concurrentEmptyNewlines = 0;
+                concurrentEmptyNewLines = 0;
             }
         }
 
